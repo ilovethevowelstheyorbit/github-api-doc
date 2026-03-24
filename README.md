@@ -1,33 +1,21 @@
 # GitHub User API
 
-A lightweight JavaScript utility for fetching public user data from the GitHub REST API. Written as part of an API documentation exercise.
+A simple JavaScript utility that pulls public profile data from the GitHub API. Built around two endpoints — one for user info, one for their repos.
 
 ---
 
-## Table of Contents
+## What it does
 
-- [Overview](#overview)
-- [Endpoints](#endpoints)
-- [Functions](#functions)
-  - [getUser()](#getuser)
-  - [getUserRepos()](#getuserrepos)
-- [Error Handling](#error-handling)
-- [Usage Example](#usage-example)
+You give it a GitHub username, it gives you back everything that's publicly available on their profile — name, bio, follower count, number of repos, when they joined, etc. No API key needed for basic use.
 
 ---
 
-## Overview
+## Endpoints used
 
-This utility wraps two GitHub REST API endpoints, allowing you to retrieve public profile information and repository data for any GitHub user. No authentication is required for basic usage, though adding a token significantly increases your rate limit.
-
----
-
-## Endpoints
-
-| Method | Endpoint                                   | Description                        |
-|--------|--------------------------------------------|------------------------------------|
-| GET    | `/users/{username}`                        | Fetch a user's public profile      |
-| GET    | `/users/{username}/repos?sort={sort}`      | Fetch a user's public repositories |
+| Method | Endpoint | What it returns |
+|--------|----------|-----------------|
+| GET | `/users/{username}` | A user's public profile |
+| GET | `/users/{username}/repos` | A list of their public repos |
 
 ---
 
@@ -35,88 +23,79 @@ This utility wraps two GitHub REST API endpoints, allowing you to retrieve publi
 
 ### `getUser(username)`
 
-Fetches public profile data for a given GitHub user.
+Fetches profile data for a GitHub user.
 
 **Parameters**
 
-| Name       | Type   | Required | Description                    |
-|------------|--------|----------|--------------------------------|
-| `username` | string | Yes      | The target user's GitHub handle |
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| `username` | string | Yes | Their GitHub handle, e.g. `"octocat"` |
 
-**Returns**
+**What you get back**
 
-A `Promise` that resolves to a user object containing:
-
-| Field          | Type            | Description                              |
-|----------------|-----------------|------------------------------------------|
-| `login`        | string          | The user's GitHub username               |
-| `name`         | string / null   | The user's display name                  |
-| `bio`          | string / null   | Short profile bio                        |
-| `public_repos` | integer         | Number of public repositories            |
-| `followers`    | integer         | Number of followers                      |
-| `following`    | integer         | Number of accounts the user follows      |
-| `avatar_url`   | string          | URL pointing to the user's profile image |
-| `created_at`   | string          | Account creation date (ISO 8601 format)  |
+| Field | Type | Description |
+|-------|------|-------------|
+| `login` | string | Their username |
+| `name` | string / null | Their display name if they set one |
+| `bio` | string / null | Profile bio |
+| `public_repos` | integer | How many public repos they have |
+| `followers` | integer | Follower count |
+| `following` | integer | How many people they follow |
+| `avatar_url` | string | Link to their profile picture |
+| `created_at` | string | When they joined GitHub |
 
 ---
 
 ### `getUserRepos(username, sort)`
 
-Fetches the list of public repositories for a given GitHub user.
+Grabs the public repos for a given user. You can optionally control how they're sorted.
 
 **Parameters**
 
-| Name       | Type   | Required | Default     | Description                                                      |
-|------------|--------|----------|-------------|------------------------------------------------------------------|
-| `username` | string | Yes      | —           | The target user's GitHub handle                                  |
-| `sort`     | string | No       | `"updated"` | Sort order: `created`, `updated`, `pushed`, or `full_name`       |
+| Name | Type | Required | Default | Description |
+|------|------|----------|---------|-------------|
+| `username` | string | Yes | — | Their GitHub handle |
+| `sort` | string | No | `"updated"` | One of: `created`, `updated`, `pushed`, `full_name` |
 
-**Returns**
-
-A `Promise` that resolves to an array of repository objects, each containing fields such as `name`, `description`, `stargazers_count`, `language`, and `html_url`.
+Returns an array of repo objects — each one has things like `name`, `description`, `language`, `stargazers_count`, and `html_url`.
 
 ---
 
-## Error Handling
+## Error handling
 
-Both functions throw an `Error` if the request fails. The error message includes the HTTP status code and status text for easier debugging.
+If something goes wrong, both functions throw an error with the HTTP status code so you know what actually happened.
 
-| Status Code | Meaning             | Common Cause                                          |
-|-------------|---------------------|-------------------------------------------------------|
-| `200`       | OK                  | Request was successful                                |
-| `404`       | Not Found           | The username does not exist                           |
-| `403`       | Forbidden           | Rate limit exceeded (60 req/hr unauthenticated)       |
-| `500`       | Internal Server Error | GitHub-side issue, retry after a short delay         |
+| Status | Meaning | Why it happens |
+|--------|---------|----------------|
+| `200` | OK | All good |
+| `404` | Not found | That username doesn't exist |
+| `403` | Forbidden | You've hit the rate limit (60 requests/hr without a token) |
+| `500` | Server error | GitHub's side, not yours — just retry |
 
-> **Note:** Unauthenticated requests are limited to **60 requests per hour**. To raise this to **5,000 requests per hour**, add an `Authorization: Bearer YOUR_TOKEN` header to each request.
+If you're hitting the rate limit a lot, add an `Authorization: Bearer YOUR_TOKEN` header and you'll get 5,000 requests per hour instead.
 
 ---
 
-## Usage Example
+## Example
 
 ```js
-// Fetch a user's profile
-getUser("octocat")
+getUser("ilovethevowelstheyorbit")
   .then(user => {
-    console.log("Name:", user.name);
-    console.log("Bio:", user.bio);
-    console.log("Public Repos:", user.public_repos);
-    console.log("Followers:", user.followers);
+    console.log(user.name);
+    console.log(user.bio);
+    console.log(user.public_repos);
   })
-  .catch(err => console.error("Error:", err.message));
+  .catch(err => console.error(err.message));
 
-// Fetch a user's repositories, sorted by creation date
-getUserRepos("octocat", "created")
-  .then(repos => {
-    repos.forEach(repo => console.log(repo.name));
-  })
-  .catch(err => console.error("Error:", err.message));
+getUserRepos("ilovethevowelstheyorbit", "created")
+  .then(repos => repos.forEach(r => console.log(r.name)))
+  .catch(err => console.error(err.message));
 ```
 
 ---
 
 ## References
 
-- [GitHub REST API Documentation](https://docs.github.com/en/rest)
+- [GitHub REST API docs](https://docs.github.com/en/rest)
 - [GET /users/{username}](https://docs.github.com/en/rest/users/users#get-a-user)
 - [GET /users/{username}/repos](https://docs.github.com/en/rest/repos/repos#list-repositories-for-a-user)
